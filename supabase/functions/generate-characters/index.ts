@@ -5,6 +5,49 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+async function generateCharacterImage(
+  character: { name: string; description: string; is_main: boolean },
+  style: string,
+  apiKey: string
+): Promise<string | null> {
+  try {
+    const stylePrompt = style === 'manga'
+      ? 'black and white manga art style with clean linework, screentones, and dramatic shading. No color.'
+      : 'colorful western comic book art style with bold outlines, vibrant colors, cel shading, and dynamic lighting.';
+
+    const prompt = `Create a character portrait illustration in ${stylePrompt}
+Character: ${character.name}
+Description: ${character.description}
+${character.is_main ? 'This is a main character - make the portrait detailed and striking.' : 'This is a supporting character.'}
+Show the character from chest up, facing slightly to the side, with an expressive face. Clean background with simple gradient. Professional comic/manga quality.`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Image generation failed:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    return imageUrl || null;
+  } catch (error) {
+    console.error("Error generating character image:", error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -104,11 +147,16 @@ ${referenceContext}`;
     if (toolCall?.function?.arguments) {
       const characters = JSON.parse(toolCall.function.arguments);
       
-      // Generate placeholder images for characters (in real implementation, would use image generation)
-      const charactersWithImages = characters.characters.map((char: any) => ({
-        ...char,
-        image_url: null // Would be generated with image model
-      }));
+      // Generate images for each character
+      const charactersWithImages = await Promise.all(
+        characters.characters.map(async (char: any) => {
+          const imageUrl = await generateCharacterImage(char, style, LOVABLE_API_KEY);
+          return {
+            ...char,
+            image_url: imageUrl,
+          };
+        })
+      );
 
       return new Response(JSON.stringify({ characters: charactersWithImages }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

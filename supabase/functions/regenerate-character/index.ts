@@ -5,6 +5,49 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+async function generateCharacterImage(
+  name: string,
+  description: string,
+  style: string,
+  apiKey: string
+): Promise<string | null> {
+  try {
+    const stylePrompt = style === 'manga'
+      ? 'black and white manga art style with clean linework, screentones, and dramatic shading. No color.'
+      : 'colorful western comic book art style with bold outlines, vibrant colors, cel shading, and dynamic lighting.';
+
+    const prompt = `Create a character portrait illustration in ${stylePrompt}
+Character: ${name}
+Description: ${description}
+Show the character from chest up, facing slightly to the side, with an expressive face. Clean background with simple gradient. Professional comic/manga quality.`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Image generation failed:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    return imageUrl || null;
+  } catch (error) {
+    console.error("Error generating character image:", error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -81,10 +124,19 @@ Update the character description to incorporate this feedback. Keep the name unl
     
     if (toolCall?.function?.arguments) {
       const updatedChar = JSON.parse(toolCall.function.arguments);
+      
+      // Generate new image for the updated character
+      const imageUrl = await generateCharacterImage(
+        updatedChar.name,
+        updatedChar.description,
+        style,
+        LOVABLE_API_KEY
+      );
+
       return new Response(JSON.stringify({ 
         character: { 
           ...updatedChar,
-          image_url: character.image_url // Keep existing image
+          image_url: imageUrl || character.image_url // Fall back to existing image
         } 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
