@@ -45,6 +45,16 @@ export function CharacterCard({
             alt={character.name}
             className="w-full h-full object-cover"
           />
+        ) : isGenerating ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3">
+            <div className="relative w-full h-full">
+              <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted-foreground/10 to-muted animate-pulse" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <span className="text-xs text-muted-foreground font-medium">Generating image...</span>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="flex items-center justify-center h-full">
             <User className="w-16 h-16 text-muted-foreground" />
