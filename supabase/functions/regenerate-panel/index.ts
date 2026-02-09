@@ -5,6 +5,47 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+async function generatePanelImage(
+  description: string,
+  style: string,
+  apiKey: string
+): Promise<string | null> {
+  try {
+    const stylePrompt = style === 'manga'
+      ? 'black and white manga art style with dynamic angles, speed lines, screentones, and dramatic ink work. No color.'
+      : 'colorful comic book art style with bold outlines, vibrant colors, cel shading, and dynamic composition.';
+
+    const prompt = `Create a comic panel illustration in ${stylePrompt}
+Scene: ${description}
+This is a single comic panel with cinematic composition. Professional quality comic/manga art. Wide aspect ratio suitable for a comic panel.`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Image generation failed:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    return imageUrl || null;
+  } catch (error) {
+    console.error("Error generating panel image:", error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -80,11 +121,19 @@ Update the panel description to incorporate this feedback while keeping it fitti
     
     if (toolCall?.function?.arguments) {
       const updatedPanel = JSON.parse(toolCall.function.arguments);
+      
+      // Generate new image for the updated panel
+      const imageUrl = await generatePanelImage(
+        updatedPanel.description,
+        style,
+        LOVABLE_API_KEY
+      );
+
       return new Response(JSON.stringify({ 
         panel: { 
           ...updatedPanel,
           panel_number: panel.panel_number,
-          image_url: panel.image_url,
+          image_url: imageUrl || panel.image_url, // Fall back to existing
           dialogue: panel.dialogue
         } 
       }), {

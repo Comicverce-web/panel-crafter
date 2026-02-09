@@ -5,6 +5,54 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+async function generatePanelImage(
+  description: string,
+  panelNumber: number,
+  style: string,
+  characters: any[],
+  apiKey: string
+): Promise<string | null> {
+  try {
+    const stylePrompt = style === 'manga'
+      ? 'black and white manga art style with dynamic angles, speed lines, screentones, expressive faces, and dramatic ink work. No color.'
+      : 'colorful comic book art style with bold outlines, vibrant colors, action poses, cel shading, and dynamic composition.';
+
+    const characterContext = characters?.length > 0
+      ? `Characters in this scene: ${characters.map((c: any) => `${c.name} (${c.description})`).join('; ')}`
+      : '';
+
+    const prompt = `Create a comic panel illustration in ${stylePrompt}
+Panel ${panelNumber}: ${description}
+${characterContext}
+This is a single comic panel with cinematic composition. Professional quality comic/manga art. Wide aspect ratio suitable for a comic panel.`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Image generation failed for panel", panelNumber, ":", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    return imageUrl || null;
+  } catch (error) {
+    console.error("Error generating panel image:", error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -102,12 +150,22 @@ ${characterContext}`;
     if (toolCall?.function?.arguments) {
       const panels = JSON.parse(toolCall.function.arguments);
       
-      // Add placeholder for images (would be generated with image model)
-      const panelsWithImages = panels.panels.map((panel: any) => ({
-        ...panel,
-        image_url: null,
-        dialogue: null
-      }));
+      // Generate images for each panel sequentially to avoid rate limits
+      const panelsWithImages = [];
+      for (const panel of panels.panels) {
+        const imageUrl = await generatePanelImage(
+          panel.description,
+          panel.panel_number,
+          style,
+          characters || [],
+          LOVABLE_API_KEY
+        );
+        panelsWithImages.push({
+          ...panel,
+          image_url: imageUrl,
+          dialogue: null,
+        });
+      }
 
       return new Response(JSON.stringify({ panels: panelsWithImages }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
