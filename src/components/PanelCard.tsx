@@ -57,10 +57,18 @@ export function PanelCard({
             alt={`Panel ${panel.panel_number}`}
             className="w-full h-full object-cover"
           />
+        ) : isGenerating ? (
+          <div className="relative w-full h-full">
+            <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted-foreground/10 to-muted animate-pulse" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+              <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+              <span className="text-xs text-muted-foreground font-medium">Generating panel...</span>
+            </div>
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full gap-2">
             <ImageIcon className="w-12 h-12 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Generating...</span>
+            <span className="text-sm text-muted-foreground">Waiting...</span>
           </div>
         )}
 
