@@ -92,6 +92,8 @@ export type Database = {
       }
       projects: {
         Row: {
+          cover_image_url: string | null
+          cover_regen_count: number
           created_at: string
           id: string
           status: string
@@ -102,6 +104,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cover_image_url?: string | null
+          cover_regen_count?: number
           created_at?: string
           id?: string
           status?: string
@@ -112,6 +116,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cover_image_url?: string | null
+          cover_regen_count?: number
           created_at?: string
           id?: string
           status?: string

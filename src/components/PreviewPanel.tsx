@@ -1,9 +1,12 @@
-import { Download, Loader2, Sparkles } from 'lucide-react';
+import { Download, Loader2, Sparkles, BookOpen, RefreshCw, AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { StyleSelector } from '@/components/StyleSelector';
 import { WorkflowProgress } from '@/components/WorkflowProgress';
 import { CharacterCard } from '@/components/CharacterCard';
 import { PanelCard } from '@/components/PanelCard';
+import { ImageLightbox } from '@/components/ImageLightbox';
 import type { ProjectStyle, ProjectStatus, Character, Panel } from '@/types/project';
 
 interface PreviewPanelProps {
@@ -22,8 +25,12 @@ interface PreviewPanelProps {
   onGeneratePanels: () => void;
   onConfirmPanels: () => void;
   onDownload: () => void;
+  onGenerateCover: (feedback?: string) => void;
+  onOpenReader: () => void;
   isGenerating: boolean;
   storyLength: number;
+  coverImageUrl: string | null;
+  coverRegenCount: number;
 }
 
 export function PreviewPanel({
@@ -42,9 +49,23 @@ export function PreviewPanel({
   onGeneratePanels,
   onConfirmPanels,
   onDownload,
+  onGenerateCover,
+  onOpenReader,
   isGenerating,
   storyLength,
+  coverImageUrl,
+  coverRegenCount,
 }: PreviewPanelProps) {
+  const [coverFeedback, setCoverFeedback] = useState('');
+  const [showCoverLightbox, setShowCoverLightbox] = useState(false);
+  const maxRegens = 3;
+  const regensLeft = maxRegens - coverRegenCount;
+
+  const handleCoverRegenerate = () => {
+    onGenerateCover(coverFeedback.trim() || undefined);
+    setCoverFeedback('');
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -67,7 +88,7 @@ export function PreviewPanel({
 
       {/* Content Area */}
       <div className="flex-1 mt-6 overflow-auto">
-        {/* Draft Step - Style Selection */}
+        {/* Draft Step */}
         {status === 'draft' && (
           <div className="space-y-6 animate-fade-in">
             <div className="text-center py-8">
@@ -77,13 +98,7 @@ export function PreviewPanel({
                 Select whether you want black & white manga-style panels or full-color comic book art.
               </p>
             </div>
-
-            <StyleSelector
-              value={style}
-              onChange={onStyleChange}
-              disabled={isGenerating}
-            />
-
+            <StyleSelector value={style} onChange={onStyleChange} disabled={isGenerating} />
             <div className="flex justify-center pt-4">
               <Button
                 variant="comic"
@@ -93,19 +108,12 @@ export function PreviewPanel({
                 className="gap-2"
               >
                 {isGenerating ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Generating Characters...
-                  </>
+                  <><Loader2 className="w-5 h-5 animate-spin" />Generating Characters...</>
                 ) : (
-                  <>
-                    <Sparkles className="w-5 h-5" />
-                    Generate Characters
-                  </>
+                  <><Sparkles className="w-5 h-5" />Generate Characters</>
                 )}
               </Button>
             </div>
-
             {storyLength < 50 && (
               <p className="text-center text-sm text-muted-foreground">
                 Write at least 50 characters in your story to continue
@@ -120,10 +128,9 @@ export function PreviewPanel({
             <div className="text-center">
               <h3 className="font-comic text-xl mb-2">Your Characters</h3>
               <p className="text-muted-foreground text-sm">
-                Review and customize your characters. Click edit to provide feedback for regeneration.
+                Review and customize your characters. Click on an image to view fullscreen.
               </p>
             </div>
-
             {characters.length > 0 ? (
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
@@ -137,15 +144,8 @@ export function PreviewPanel({
                     />
                   ))}
                 </div>
-
                 <div className="flex justify-center pt-4">
-                  <Button
-                    variant="comic"
-                    size="xl"
-                    onClick={onConfirmCharacters}
-                    disabled={isGenerating}
-                    className="gap-2"
-                  >
+                  <Button variant="comic" size="xl" onClick={onConfirmCharacters} disabled={isGenerating} className="gap-2">
                     Confirm All Characters
                   </Button>
                 </div>
@@ -164,32 +164,18 @@ export function PreviewPanel({
             <div className="text-center">
               <h3 className="font-comic text-xl mb-2">Comic Panels</h3>
               <p className="text-muted-foreground text-sm">
-                Review your panels. Edit any that don't match your vision.
+                Review your panels. Click on an image to view fullscreen.
               </p>
             </div>
-
             {panels.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {panels.map((panel) => (
-                    <PanelCard
-                      key={panel.id}
-                      panel={panel}
-                      onUpdate={onPanelUpdate}
-                      onRegenerate={onPanelRegenerate}
-                      isGenerating={isGenerating}
-                    />
+                    <PanelCard key={panel.id} panel={panel} onUpdate={onPanelUpdate} onRegenerate={onPanelRegenerate} isGenerating={isGenerating} />
                   ))}
                 </div>
-
                 <div className="flex justify-center pt-4">
-                  <Button
-                    variant="comic"
-                    size="xl"
-                    onClick={onConfirmPanels}
-                    disabled={isGenerating}
-                    className="gap-2"
-                  >
+                  <Button variant="comic" size="xl" onClick={onConfirmPanels} disabled={isGenerating} className="gap-2">
                     Confirm Panels & Add Dialogues
                   </Button>
                 </div>
@@ -208,36 +194,113 @@ export function PreviewPanel({
           <div className="space-y-6 animate-fade-in">
             <div className="text-center">
               <h3 className="font-comic text-xl mb-2">Add Dialogues</h3>
-              <p className="text-muted-foreground text-sm">
-                Now add dialogues to bring your panels to life!
-              </p>
+              <p className="text-muted-foreground text-sm">Add dialogues to bring your panels to life!</p>
             </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {panels.map((panel) => (
-                <PanelCard
-                  key={panel.id}
-                  panel={panel}
-                  onUpdate={onPanelUpdate}
-                  onRegenerate={onPanelRegenerate}
-                  isGenerating={isGenerating}
-                  showDialogueInput
-                />
+                <PanelCard key={panel.id} panel={panel} onUpdate={onPanelUpdate} onRegenerate={onPanelRegenerate} isGenerating={isGenerating} showDialogueInput />
               ))}
             </div>
-
             <div className="flex justify-center pt-4">
               <Button
                 variant="comic"
                 size="xl"
-                onClick={() => onStatusChange('complete')}
+                onClick={() => {
+                  onGenerateCover();
+                  onStatusChange('cover');
+                }}
                 disabled={isGenerating}
                 className="gap-2"
               >
                 <Sparkles className="w-5 h-5" />
-                Finish Comic
+                Generate Cover Page
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Cover Step */}
+        {status === 'cover' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="text-center">
+              <h3 className="font-comic text-xl mb-2">Cover Page</h3>
+              <p className="text-muted-foreground text-sm">
+                Your cover page is being generated. You can make up to <strong>{maxRegens}</strong> changes.
+              </p>
+            </div>
+
+            {/* Cover image */}
+            <div className="flex justify-center">
+              {coverImageUrl ? (
+                <div
+                  className="relative cursor-pointer max-w-sm rounded-xl overflow-hidden shadow-2xl border-4 border-primary/30"
+                  onClick={() => setShowCoverLightbox(true)}
+                >
+                  <img src={coverImageUrl} alt="Cover" className="w-full hover:scale-105 transition-transform duration-300" />
+                </div>
+              ) : isGenerating ? (
+                <div className="w-72 h-96 rounded-xl bg-gradient-to-br from-muted via-muted-foreground/10 to-muted flex flex-col items-center justify-center gap-4 border-4 border-primary/20">
+                  <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  <span className="text-sm text-muted-foreground font-medium">Generating cover...</span>
+                </div>
+              ) : (
+                <div className="w-72 h-96 rounded-xl bg-muted flex items-center justify-center border-4 border-dashed border-muted-foreground/30">
+                  <span className="text-muted-foreground">No cover yet</span>
+                </div>
+              )}
+            </div>
+
+            {/* Regen counter */}
+            <div className="text-center">
+              {regensLeft > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  You can make <strong className="text-primary">{regensLeft}</strong> more change{regensLeft !== 1 ? 's' : ''}
+                </p>
+              ) : (
+                <div className="flex items-center justify-center gap-2 text-sm text-amber-500">
+                  <AlertTriangle className="w-4 h-4" />
+                  <p>All regeneration attempts used. Use an external AI tool if needed.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Feedback input */}
+            {coverImageUrl && regensLeft > 0 && (
+              <div className="max-w-lg mx-auto space-y-3">
+                <Textarea
+                  placeholder="Describe changes for the cover (e.g., 'Make the title bigger', 'Change the background color')"
+                  value={coverFeedback}
+                  onChange={(e) => setCoverFeedback(e.target.value)}
+                  className="min-h-[80px] text-sm bg-muted/50"
+                  disabled={isGenerating}
+                />
+                <Button
+                  variant="glow"
+                  className="w-full gap-2"
+                  onClick={handleCoverRegenerate}
+                  disabled={!coverFeedback.trim() || isGenerating}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Regenerate Cover ({regensLeft} left)
+                </Button>
+              </div>
+            )}
+
+            {/* Finalize */}
+            {coverImageUrl && (
+              <div className="flex justify-center pt-4">
+                <Button
+                  variant="comic"
+                  size="xl"
+                  onClick={() => onStatusChange('complete')}
+                  disabled={isGenerating}
+                  className="gap-2"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Finalize Manga
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -247,39 +310,42 @@ export function PreviewPanel({
             <div className="text-center py-8">
               <div className="text-6xl mb-4">🎉</div>
               <h3 className="font-comic text-2xl text-gradient-primary mb-2">
-                Your Comic is Ready!
+                Your {style === 'manga' ? 'Manga' : 'Comic'} is Ready!
               </h3>
               <p className="text-muted-foreground">
-                Download your {style === 'manga' ? 'manga' : 'comic book'} as a PDF.
+                Open the reader to view your creation in fullscreen page-by-page mode.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {panels.map((panel) => (
-                <PanelCard
-                  key={panel.id}
-                  panel={panel}
-                  onUpdate={onPanelUpdate}
-                  onRegenerate={onPanelRegenerate}
-                  isGenerating={isGenerating}
-                />
-              ))}
-            </div>
-
-            <div className="flex justify-center pt-4">
-              <Button
-                variant="comic"
-                size="xl"
-                onClick={onDownload}
-                className="gap-2"
-              >
+            <div className="flex justify-center gap-4">
+              <Button variant="comic" size="xl" onClick={onOpenReader} className="gap-2">
+                <BookOpen className="w-5 h-5" />
+                Open Reader
+              </Button>
+              <Button variant="comic" size="xl" onClick={onDownload} className="gap-2">
                 <Download className="w-5 h-5" />
                 Download PDF
               </Button>
             </div>
+
+            {/* Preview thumbnails */}
+            {coverImageUrl && (
+              <div className="flex justify-center">
+                <img src={coverImageUrl} alt="Cover" className="w-40 rounded-lg shadow-lg border-2 border-primary/30" />
+              </div>
+            )}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              {panels.map((panel) => (
+                <PanelCard key={panel.id} panel={panel} onUpdate={onPanelUpdate} onRegenerate={onPanelRegenerate} isGenerating={isGenerating} />
+              ))}
+            </div>
           </div>
         )}
       </div>
+
+      {showCoverLightbox && coverImageUrl && (
+        <ImageLightbox imageUrl={coverImageUrl} alt="Cover Page" onClose={() => setShowCoverLightbox(false)} />
+      )}
     </div>
   );
 }

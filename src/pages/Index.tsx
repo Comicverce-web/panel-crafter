@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { HistorySidebar } from '@/components/HistorySidebar';
 import { StoryInput } from '@/components/StoryInput';
 import { PreviewPanel } from '@/components/PreviewPanel';
+import { MangaReader } from '@/components/MangaReader';
 import { useProject } from '@/hooks/useProject';
 import { toast } from 'sonner';
 import type { Project, Character, Panel } from '@/types/project';
@@ -14,6 +15,7 @@ export default function Index() {
   const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [showReader, setShowReader] = useState(false);
 
   const {
     project,
@@ -35,6 +37,7 @@ export default function Index() {
     setPanels,
     updateCharacter,
     updatePanel,
+    updateProject,
   } = useProject();
 
   // Check auth
@@ -47,9 +50,7 @@ export default function Index() {
       }
       setUser(session.user);
     };
-
     checkAuth();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         navigate('/auth');
@@ -57,14 +58,12 @@ export default function Index() {
         setUser(session.user);
       }
     });
-
     return () => subscription.unsubscribe();
   }, [navigate]);
 
   // Load projects
   useEffect(() => {
     if (!user) return;
-
     const loadProjects = async () => {
       setIsLoadingProjects(true);
       const { data, error } = await supabase
@@ -77,7 +76,6 @@ export default function Index() {
         toast.error('Failed to load projects');
       } else {
         setProjects((data as Project[]) || []);
-        // Auto-load first project or create new one
         if (data && data.length > 0) {
           loadProject(data[0].id);
         } else {
@@ -86,7 +84,6 @@ export default function Index() {
       }
       setIsLoadingProjects(false);
     };
-
     loadProjects();
   }, [user]);
 
@@ -100,8 +97,16 @@ export default function Index() {
   }, [user, createProject]);
 
   const handleSelectProject = useCallback((projectId: string) => {
-    loadProject(projectId);
-  }, [loadProject]);
+    const selected = projects.find(p => p.id === projectId);
+    // If complete, open reader directly
+    if (selected?.status === 'complete') {
+      loadProject(projectId);
+      setShowReader(true);
+    } else {
+      loadProject(projectId);
+      setShowReader(false);
+    }
+  }, [loadProject, projects]);
 
   const handleDeleteProject = useCallback(async (projectId: string) => {
     const { error } = await supabase.from('projects').delete().eq('id', projectId);
@@ -110,7 +115,6 @@ export default function Index() {
     } else {
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
       if (project?.id === projectId) {
-        // Load another project or create new
         const remaining = projects.filter((p) => p.id !== projectId);
         if (remaining.length > 0) {
           loadProject(remaining[0].id);
@@ -126,18 +130,15 @@ export default function Index() {
   const generateCharacters = useCallback(async () => {
     if (!project) return;
     setIsGenerating(true);
-    
     try {
       const response = await supabase.functions.invoke('generate-characters', {
-        body: { 
+        body: {
           story: project.story,
           style: project.style,
           referenceImages: referenceImages.map(img => ({ url: img.image_url, label: img.label }))
         }
       });
-
       if (response.error) throw response.error;
-
       const generatedChars = response.data.characters as Character[];
       setCharacters(generatedChars.map((c, i) => ({
         ...c,
@@ -145,7 +146,6 @@ export default function Index() {
         project_id: project.id,
         created_at: new Date().toISOString(),
       })));
-
       updateStatus('characters');
       toast.success('Characters generated!');
     } catch (error: any) {
@@ -158,9 +158,7 @@ export default function Index() {
   const confirmCharacters = useCallback(async () => {
     if (!project) return;
     setIsGenerating(true);
-
     try {
-      // Save characters to DB
       for (const char of characters) {
         if (char.id.startsWith('temp-')) {
           await supabase.from('characters').insert({
@@ -172,8 +170,6 @@ export default function Index() {
           });
         }
       }
-
-      // Generate panels
       const response = await supabase.functions.invoke('generate-panels', {
         body: {
           story: project.story,
@@ -181,9 +177,7 @@ export default function Index() {
           characters: characters.map(c => ({ name: c.name, description: c.description })),
         }
       });
-
       if (response.error) throw response.error;
-
       const generatedPanels = response.data.panels as Panel[];
       setPanels(generatedPanels.map((p, i) => ({
         ...p,
@@ -192,7 +186,6 @@ export default function Index() {
         panel_number: i + 1,
         created_at: new Date().toISOString(),
       })));
-
       updateStatus('panels');
       toast.success('Panels generated!');
     } catch (error: any) {
@@ -204,8 +197,6 @@ export default function Index() {
 
   const confirmPanels = useCallback(async () => {
     if (!project) return;
-
-    // Save panels to DB
     for (const panel of panels) {
       if (panel.id.startsWith('temp-')) {
         await supabase.from('panels').insert({
@@ -216,7 +207,6 @@ export default function Index() {
         });
       }
     }
-
     updateStatus('dialogues');
   }, [project, panels, updateStatus]);
 
@@ -225,17 +215,10 @@ export default function Index() {
     try {
       const char = characters.find(c => c.id === charId);
       if (!char) return;
-
       const response = await supabase.functions.invoke('regenerate-character', {
-        body: {
-          character: char,
-          feedback,
-          style: project?.style,
-        }
+        body: { character: char, feedback, style: project?.style },
       });
-
       if (response.error) throw response.error;
-      
       updateCharacter(charId, response.data.character);
       toast.success('Character regenerated!');
     } catch (error: any) {
@@ -250,17 +233,10 @@ export default function Index() {
     try {
       const panel = panels.find(p => p.id === panelId);
       if (!panel) return;
-
       const response = await supabase.functions.invoke('regenerate-panel', {
-        body: {
-          panel,
-          feedback,
-          style: project?.style,
-        }
+        body: { panel, feedback, style: project?.style },
       });
-
       if (response.error) throw response.error;
-      
       updatePanel(panelId, response.data.panel);
       toast.success('Panel regenerated!');
     } catch (error: any) {
@@ -270,9 +246,36 @@ export default function Index() {
     }
   }, [panels, project, updatePanel, setIsGenerating]);
 
+  const generateCover = useCallback(async (feedback?: string) => {
+    if (!project) return;
+    setIsGenerating(true);
+    try {
+      const response = await supabase.functions.invoke('generate-cover', {
+        body: {
+          title: project.title,
+          story: project.story,
+          style: project.style,
+          characters: characters.map(c => ({ name: c.name, description: c.description })),
+          feedback,
+        }
+      });
+      if (response.error) throw response.error;
+      const newCount = (project.cover_regen_count || 0) + (feedback ? 1 : 0);
+      updateProject({
+        cover_image_url: response.data.cover_image_url,
+        cover_regen_count: newCount,
+        status: 'cover',
+      });
+      toast.success(feedback ? 'Cover regenerated!' : 'Cover generated!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to generate cover');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [project, characters, updateProject, setIsGenerating]);
+
   const downloadPDF = useCallback(async () => {
     toast.info('PDF generation coming soon!');
-    // In a full implementation, this would call an edge function to generate PDF
   }, []);
 
   if (!user || isLoadingProjects) {
@@ -286,9 +289,20 @@ export default function Index() {
     );
   }
 
+  // Reader mode
+  if (showReader && project) {
+    return (
+      <MangaReader
+        coverImageUrl={project.cover_image_url}
+        panels={panels}
+        title={project.title}
+        onClose={() => setShowReader(false)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      {/* History Sidebar */}
       <HistorySidebar
         projects={projects}
         currentProjectId={project?.id || null}
@@ -297,11 +311,8 @@ export default function Index() {
         onDeleteProject={handleDeleteProject}
         isLoading={isLoadingProjects}
       />
-
-      {/* Main Content */}
       <div className="ml-64 min-h-screen transition-all duration-300">
         <div className="flex h-screen">
-          {/* Left Panel - Story Input */}
           <div className="w-1/2 p-6 overflow-auto border-r border-border">
             <StoryInput
               story={project?.story || ''}
@@ -313,8 +324,6 @@ export default function Index() {
               isGenerating={isGenerating}
             />
           </div>
-
-          {/* Right Panel - Preview */}
           <div className="w-1/2 p-6 overflow-auto">
             <PreviewPanel
               style={project?.style || 'comic'}
@@ -332,8 +341,12 @@ export default function Index() {
               onGeneratePanels={confirmCharacters}
               onConfirmPanels={confirmPanels}
               onDownload={downloadPDF}
+              onGenerateCover={generateCover}
+              onOpenReader={() => setShowReader(true)}
               isGenerating={isGenerating}
               storyLength={project?.story?.length || 0}
+              coverImageUrl={project?.cover_image_url || null}
+              coverRegenCount={project?.cover_regen_count || 0}
             />
           </div>
         </div>

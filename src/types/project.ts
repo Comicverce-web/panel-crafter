@@ -1,5 +1,5 @@
 export type ProjectStyle = 'comic' | 'manga';
-export type ProjectStatus = 'draft' | 'characters' | 'panels' | 'dialogues' | 'complete';
+export type ProjectStatus = 'draft' | 'characters' | 'panels' | 'dialogues' | 'cover' | 'complete';
 
 export interface Project {
   id: string;
@@ -8,6 +8,8 @@ export interface Project {
   story: string | null;
   style: ProjectStyle;
   status: ProjectStatus;
+  cover_image_url: string | null;
+  cover_regen_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -51,5 +53,6 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
   { id: 'characters', label: 'Characters', description: 'Generate and customize your characters' },
   { id: 'panels', label: 'Panels', description: 'Generate comic panels from your story' },
   { id: 'dialogues', label: 'Dialogues', description: 'Add dialogues to your panels' },
-  { id: 'complete', label: 'Complete', description: 'Download your comic book' },
+  { id: 'cover', label: 'Cover', description: 'Generate a cover page for your manga' },
+  { id: 'complete', label: 'Complete', description: 'Read and download your comic book' },
 ];
