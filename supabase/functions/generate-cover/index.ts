@@ -64,8 +64,9 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Cover page is ALWAYS in full color regardless of manga or comic style
     const stylePrompt = style === 'manga'
-      ? 'black and white manga cover art style with dramatic ink work, bold title area, expressive characters, and professional manga volume cover composition. No color.'
+      ? 'vibrant full-color anime/manga cover art style with dramatic lighting, rich colors, expressive characters, bold title area, and professional manga volume cover composition. Full color, not black and white.'
       : 'colorful comic book cover art style with bold outlines, vibrant colors, dynamic hero poses, dramatic lighting, and professional comic book cover composition.';
 
     const characterContext = characters?.length > 0

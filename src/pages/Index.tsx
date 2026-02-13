@@ -9,6 +9,7 @@ import { useProject } from '@/hooks/useProject';
 import { toast } from 'sonner';
 import type { Project, Character, Panel } from '@/types/project';
 import type { User } from '@supabase/supabase-js';
+import { cn } from '@/lib/utils';
 
 export default function Index() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function Index() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [showReader, setShowReader] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const {
     project,
@@ -310,8 +312,10 @@ export default function Index() {
         onNewProject={handleNewProject}
         onDeleteProject={handleDeleteProject}
         isLoading={isLoadingProjects}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
-      <div className="ml-64 min-h-screen transition-all duration-300">
+      <div className={cn("min-h-screen transition-all duration-300", sidebarOpen ? "ml-64" : "ml-0")}>
         <div className="flex h-screen">
           <div className="w-1/2 p-6 overflow-auto border-r border-border">
             <StoryInput
