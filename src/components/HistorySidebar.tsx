@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Trash2, Clock, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,6 +10,8 @@ interface HistorySidebarProps {
   onNewProject: () => void;
   onDeleteProject: (id: string) => void;
   isLoading?: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
 export function HistorySidebar({
@@ -20,9 +21,9 @@ export function HistorySidebar({
   onNewProject,
   onDeleteProject,
   isLoading,
+  isOpen,
+  onToggle,
 }: HistorySidebarProps) {
-  const [isOpen, setIsOpen] = useState(true);
-
   return (
     <>
       {/* Toggle Button */}
@@ -30,10 +31,10 @@ export function HistorySidebar({
         variant="ghost"
         size="icon"
         className={cn(
-          "fixed left-0 top-1/2 -translate-y-1/2 z-50 h-12 w-6 rounded-l-none bg-card border border-l-0 border-border hover:bg-muted transition-all",
-          isOpen && "left-64"
+          "fixed top-1/2 -translate-y-1/2 z-50 h-12 w-6 rounded-l-none bg-card border border-l-0 border-border hover:bg-muted transition-all duration-300",
+          isOpen ? "left-64" : "left-0"
         )}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={onToggle}
       >
         {isOpen ? (
           <ChevronLeft className="w-4 h-4" />

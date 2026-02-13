@@ -64,10 +64,18 @@ async function generatePanelImage(
       ? `Characters in this scene: ${characters.map((c: any) => `${c.name} (${c.description})`).join('; ')}`
       : '';
 
-    const prompt = `Create a comic panel illustration in ${stylePrompt}
-Panel ${panelNumber}: ${description}
+    const prompt = `Create a comic page layout illustration in ${stylePrompt}
+This is a FULL comic/manga PAGE (not a single panel). The page should contain 3-5 panels arranged in a dynamic layout showing different moments/angles of this scene:
+
+Scene description: ${description}
 ${characterContext}
-This is a single comic panel with cinematic composition. Professional quality comic/manga art. Wide aspect ratio suitable for a comic panel.`;
+
+IMPORTANT: Design this as a COMPLETE comic page with multiple panels of varying sizes arranged in an interesting grid layout. Include:
+- Close-up reaction shots
+- Wide establishing shots  
+- Action sequences
+- Different camera angles of the same scene
+The panels should flow naturally and tell the story visually across the page. Professional quality ${style === 'manga' ? 'manga' : 'comic book'} page layout. Portrait orientation, full page.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -119,14 +127,30 @@ serve(async (req) => {
       ? `Characters in this story: ${characters.map((c: any) => `${c.name}: ${c.description}`).join('\n')}`
       : '';
 
-    const systemPrompt = `You are a comic panel designer for ${style === 'manga' ? 'manga' : 'comic books'}.
-Based on the story, break it down into 6-8 sequential panels that tell the story visually.
-For each panel, provide:
-- panel_number: Sequential number (1, 2, 3, etc.)
-- description: Visual description of what happens in the panel, including character positions, expressions, and background (2-3 sentences)
+    // First, use AI to deeply analyze the story and break it into meaningful scenes
+    const analysisPrompt = `You are an expert manga/comic book story analyst and panel designer.
 
-Focus on visual storytelling - show action, emotion, and progression.
-${characterContext}`;
+Carefully read and analyze this story:
+"${story}"
+
+${characterContext}
+
+Your task:
+1. Understand the narrative arc, key events, emotional beats, and character interactions
+2. Break the story into 6-8 sequential PAGES (not individual panels - each page will contain multiple panels)
+3. Each page should represent a meaningful scene or story beat
+4. For each page, write a rich, detailed visual description that covers ALL the moments happening in that scene
+
+For each page, provide:
+- panel_number: Sequential page number (1, 2, 3, etc.)
+- description: A detailed description of the ENTIRE scene on this page, including multiple moments, character expressions, actions, backgrounds, and mood. This should be detailed enough that an artist can draw 3-5 sub-panels from it. (4-6 sentences)
+
+Think about:
+- Establishing shots and environment details
+- Character emotions and body language
+- Action sequences and movement
+- Dramatic reveals and tension
+- Pacing - quiet moments vs intense moments`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -137,15 +161,15 @@ ${characterContext}`;
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Story: ${story}\n\nBreak this story into comic panels in ${styleDescription}.` }
+          { role: "system", content: analysisPrompt },
+          { role: "user", content: `Break this story into comic pages in ${styleDescription}. Each page should contain enough content for 3-5 sub-panels.` }
         ],
         tools: [
           {
             type: "function",
             function: {
               name: "create_panels",
-              description: "Create comic panel descriptions based on the story",
+              description: "Create comic page descriptions based on the story analysis",
               parameters: {
                 type: "object",
                 properties: {
