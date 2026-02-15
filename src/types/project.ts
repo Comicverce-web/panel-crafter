@@ -1,6 +1,11 @@
 export type ProjectStyle = 'comic' | 'manga';
 export type ProjectStatus = 'draft' | 'characters' | 'panels' | 'dialogues' | 'cover' | 'complete';
 
+export interface CharacterDescription {
+  name: string;
+  description: string;
+}
+
 export interface Project {
   id: string;
   user_id: string;
@@ -10,6 +15,13 @@ export interface Project {
   status: ProjectStatus;
   cover_image_url: string | null;
   cover_regen_count: number;
+  genre: string | null;
+  theme: string | null;
+  settings: string | null;
+  recommendations: string | null;
+  num_pages: number;
+  page_storylines: string[];
+  character_descriptions: CharacterDescription[];
   created_at: string;
   updated_at: string;
 }

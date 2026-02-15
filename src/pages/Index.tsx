@@ -30,6 +30,8 @@ export default function Index() {
     loadProject,
     createProject,
     updateStory,
+    updateTitle,
+    updateField,
     updateStyle,
     updateStatus,
     addReferenceImage,
@@ -77,7 +79,7 @@ export default function Index() {
       if (error) {
         toast.error('Failed to load projects');
       } else {
-        setProjects((data as Project[]) || []);
+        setProjects((data as unknown as Project[]) || []);
         if (data && data.length > 0) {
           loadProject(data[0].id);
         } else {
@@ -137,6 +139,13 @@ export default function Index() {
         body: {
           story: project.story,
           style: project.style,
+          title: project.title,
+          genre: project.genre,
+          theme: project.theme,
+          settings: project.settings,
+          recommendations: project.recommendations,
+          pageStorylines: project.page_storylines,
+          characterDescriptions: project.character_descriptions,
           referenceImages: referenceImages.map(img => ({ url: img.image_url, label: img.label }))
         }
       });
@@ -319,8 +328,24 @@ export default function Index() {
         <div className="flex h-screen">
           <div className="w-1/2 p-6 overflow-auto border-r border-border">
             <StoryInput
+              title={project?.title || ''}
+              onTitleChange={updateTitle}
+              genre={project?.genre || ''}
+              onGenreChange={(v) => updateField('genre', v)}
               story={project?.story || ''}
               onStoryChange={updateStory}
+              numPages={project?.num_pages || 1}
+              onNumPagesChange={(v) => updateField('num_pages', v)}
+              pageStorylines={(project?.page_storylines as string[]) || []}
+              onPageStorylinesChange={(v) => updateField('page_storylines', v)}
+              characterDescriptions={(project?.character_descriptions as any[]) || []}
+              onCharacterDescriptionsChange={(v) => updateField('character_descriptions', v)}
+              theme={project?.theme || ''}
+              onThemeChange={(v) => updateField('theme', v)}
+              settings={project?.settings || ''}
+              onSettingsChange={(v) => updateField('settings', v)}
+              recommendations={project?.recommendations || ''}
+              onRecommendationsChange={(v) => updateField('recommendations', v)}
               referenceImages={referenceImages}
               onAddImage={addReferenceImage}
               onRemoveImage={removeReferenceImage}
