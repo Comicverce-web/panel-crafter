@@ -286,21 +286,19 @@ export function PreviewPanel({
               </div>
             )}
 
-            {/* Finalize */}
-            {coverImageUrl && (
-              <div className="flex justify-center pt-4">
-                <Button
-                  variant="comic"
-                  size="xl"
-                  onClick={() => onStatusChange('complete')}
-                  disabled={isGenerating}
-                  className="gap-2"
-                >
-                  <Sparkles className="w-5 h-5" />
-                  Finalize Manga
-                </Button>
-              </div>
-            )}
+            {/* Confirm / Finalize */}
+            <div className="flex justify-center pt-4">
+              <Button
+                variant="comic"
+                size="xl"
+                onClick={() => onStatusChange('complete')}
+                disabled={isGenerating}
+                className="gap-2"
+              >
+                <Sparkles className="w-5 h-5" />
+                Confirm Book Cover
+              </Button>
+            </div>
           </div>
         )}
 

@@ -20,7 +20,7 @@ export function useProject() {
         .single();
 
       if (projectError) throw projectError;
-      setProject(projectData as Project);
+      setProject(projectData as unknown as Project);
 
       // Load related data
       const [imagesRes, charsRes, panelsRes] = await Promise.all([
@@ -48,11 +48,11 @@ export function useProject() {
         .single();
 
       if (error) throw error;
-      setProject(data as Project);
+      setProject(data as unknown as Project);
       setReferenceImages([]);
       setCharacters([]);
       setPanels([]);
-      return data as Project;
+      return data as unknown as Project;
     } catch (error) {
       console.error('Error creating project:', error);
       return null;
@@ -64,7 +64,7 @@ export function useProject() {
     try {
       const { error } = await supabase
         .from('projects')
-        .update(updates)
+        .update(updates as any)
         .eq('id', project.id);
 
       if (error) throw error;
@@ -77,9 +77,26 @@ export function useProject() {
   const updateStory = useCallback((story: string) => {
     if (!project) return;
     setProject({ ...project, story });
-    // Debounce the actual save
     const timeout = setTimeout(() => {
       updateProject({ story });
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [project, updateProject]);
+
+  const updateTitle = useCallback((title: string) => {
+    if (!project) return;
+    setProject({ ...project, title });
+    const timeout = setTimeout(() => {
+      updateProject({ title });
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [project, updateProject]);
+
+  const updateField = useCallback((field: string, value: any) => {
+    if (!project) return;
+    setProject({ ...project, [field]: value });
+    const timeout = setTimeout(() => {
+      updateProject({ [field]: value } as any);
     }, 1000);
     return () => clearTimeout(timeout);
   }, [project, updateProject]);
@@ -154,6 +171,8 @@ export function useProject() {
     createProject,
     updateProject,
     updateStory,
+    updateTitle,
+    updateField,
     updateStyle,
     updateStatus,
     addReferenceImage,

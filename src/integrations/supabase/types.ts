@@ -92,37 +92,58 @@ export type Database = {
       }
       projects: {
         Row: {
+          character_descriptions: Json
           cover_image_url: string | null
           cover_regen_count: number
           created_at: string
+          genre: string | null
           id: string
+          num_pages: number
+          page_storylines: Json
+          recommendations: string | null
+          settings: string | null
           status: string
           story: string | null
           style: string
+          theme: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          character_descriptions?: Json
           cover_image_url?: string | null
           cover_regen_count?: number
           created_at?: string
+          genre?: string | null
           id?: string
+          num_pages?: number
+          page_storylines?: Json
+          recommendations?: string | null
+          settings?: string | null
           status?: string
           story?: string | null
           style?: string
+          theme?: string | null
           title?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          character_descriptions?: Json
           cover_image_url?: string | null
           cover_regen_count?: number
           created_at?: string
+          genre?: string | null
           id?: string
+          num_pages?: number
+          page_storylines?: Json
+          recommendations?: string | null
+          settings?: string | null
           status?: string
           story?: string | null
           style?: string
+          theme?: string | null
           title?: string
           updated_at?: string
           user_id?: string
