@@ -33,6 +33,7 @@ interface StoryInputProps {
   onRemoveImage: (id: string) => void;
   onUpdateLabel: (id: string, label: string) => void;
   isGenerating?: boolean;
+  disabled?: boolean;
 }
 
 export function StoryInput({
@@ -59,6 +60,7 @@ export function StoryInput({
   onRemoveImage,
   onUpdateLabel,
   isGenerating = false,
+  disabled = false,
 }: StoryInputProps) {
   const [dragActive, setDragActive] = useState(false);
   const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
@@ -138,8 +140,17 @@ export function StoryInput({
     onCharacterDescriptionsChange(newChars);
   };
 
+  const isDisabled = disabled || isGenerating;
+
   return (
     <div className="space-y-6 h-full">
+      {disabled && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-center">
+          <p className="text-sm text-primary font-medium">
+            🔒 This project is complete. Open the Reader or download the PDF to view your creation.
+          </p>
+        </div>
+      )}
       {/* Title */}
       <Card className="border-border bg-card/50 backdrop-blur">
         <CardHeader className="pb-3">
@@ -153,7 +164,7 @@ export function StoryInput({
             placeholder="Enter your manga/comic title..."
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
-            disabled={isGenerating}
+            disabled={isDisabled}
             className="bg-muted/50 border-border focus:border-primary"
           />
         </CardContent>
@@ -172,7 +183,7 @@ export function StoryInput({
             placeholder="e.g., Funny, Thriller, Romance, Action, Horror..."
             value={genre}
             onChange={(e) => onGenreChange(e.target.value)}
-            disabled={isGenerating}
+            disabled={isDisabled}
             className="bg-muted/50 border-border focus:border-primary"
           />
         </CardContent>
@@ -195,7 +206,7 @@ export function StoryInput({
             className="min-h-[120px] resize-none bg-muted/50 border-border focus:border-primary"
             value={story}
             onChange={(e) => onStoryChange(e.target.value)}
-            disabled={isGenerating}
+            disabled={isDisabled}
           />
           <span className="text-xs text-muted-foreground mt-2 block">{story.length} characters</span>
         </CardContent>
@@ -213,7 +224,7 @@ export function StoryInput({
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Select value={numPages.toString()} onValueChange={handleNumPagesChange} disabled={isGenerating}>
+          <Select value={numPages.toString()} onValueChange={handleNumPagesChange} disabled={isDisabled}>
             <SelectTrigger className="bg-muted/50 border-border">
               <SelectValue placeholder="Select number of pages" />
             </SelectTrigger>
@@ -238,7 +249,7 @@ export function StoryInput({
                     className="min-h-[80px] resize-none bg-muted/50 border-border focus:border-primary"
                     value={storyline}
                     onChange={(e) => handlePageStorylineChange(index, e.target.value)}
-                    disabled={isGenerating}
+                    disabled={isDisabled}
                   />
                 </div>
               ))}
@@ -265,7 +276,7 @@ export function StoryInput({
             placeholder="Number of characters"
             value={numCharsInput}
             onChange={(e) => handleNumCharsChange(e.target.value)}
-            disabled={isGenerating}
+            disabled={isDisabled}
             className="bg-muted/50 border-border focus:border-primary w-48"
           />
 
@@ -278,7 +289,7 @@ export function StoryInput({
                     placeholder="Character name"
                     value={char.name}
                     onChange={(e) => handleCharDescChange(index, 'name', e.target.value)}
-                    disabled={isGenerating}
+                    disabled={isDisabled}
                     className="bg-muted/50 border-border focus:border-primary"
                   />
                   <Textarea
@@ -286,7 +297,7 @@ export function StoryInput({
                     className="min-h-[60px] resize-none bg-muted/50 border-border focus:border-primary"
                     value={char.description}
                     onChange={(e) => handleCharDescChange(index, 'description', e.target.value)}
-                    disabled={isGenerating}
+                    disabled={isDisabled}
                   />
                 </div>
               ))}
@@ -308,7 +319,7 @@ export function StoryInput({
             placeholder="e.g., Redemption, Coming of age, Good vs Evil..."
             value={theme}
             onChange={(e) => onThemeChange(e.target.value)}
-            disabled={isGenerating}
+            disabled={isDisabled}
             className="bg-muted/50 border-border focus:border-primary"
           />
         </CardContent>
@@ -328,7 +339,7 @@ export function StoryInput({
             className="min-h-[80px] resize-none bg-muted/50 border-border focus:border-primary"
             value={settings}
             onChange={(e) => onSettingsChange(e.target.value)}
-            disabled={isGenerating}
+            disabled={isDisabled}
           />
         </CardContent>
       </Card>
@@ -347,7 +358,7 @@ export function StoryInput({
             className="min-h-[80px] resize-none bg-muted/50 border-border focus:border-primary"
             value={recommendations}
             onChange={(e) => onRecommendationsChange(e.target.value)}
-            disabled={isGenerating}
+            disabled={isDisabled}
           />
         </CardContent>
       </Card>
@@ -381,7 +392,7 @@ export function StoryInput({
               accept="image/*"
               onChange={handleFileInput}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              disabled={isGenerating}
+              disabled={isDisabled}
             />
             <Upload className={`w-10 h-10 mx-auto mb-3 ${dragActive ? 'text-primary' : 'text-muted-foreground'}`} />
             <p className="text-sm text-muted-foreground">

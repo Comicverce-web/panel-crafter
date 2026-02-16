@@ -11,14 +11,14 @@ export function WorkflowProgress({ currentStep, onStepClick }: WorkflowProgressP
   const currentIndex = WORKFLOW_STEPS.findIndex((s) => s.id === currentStep);
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-card/50 backdrop-blur rounded-xl border border-border">
+    <div className="flex items-center overflow-x-auto scrollbar-thin px-4 py-3 bg-card/50 backdrop-blur rounded-xl border border-border gap-0 min-w-0">
       {WORKFLOW_STEPS.map((step, index) => {
         const isCompleted = index < currentIndex;
         const isActive = index === currentIndex;
         const isClickable = index <= currentIndex && onStepClick;
 
         return (
-          <div key={step.id} className="flex items-center">
+          <div key={step.id} className="flex items-center flex-shrink-0">
             <button
               onClick={() => isClickable && onStepClick(step.id)}
               disabled={!isClickable}

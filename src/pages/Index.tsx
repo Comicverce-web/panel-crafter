@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import type { Project, Character, Panel } from '@/types/project';
 import type { User } from '@supabase/supabase-js';
 import { cn } from '@/lib/utils';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 
 export default function Index() {
   const navigate = useNavigate();
@@ -325,36 +326,41 @@ export default function Index() {
         onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
       <div className={cn("min-h-screen transition-all duration-300", sidebarOpen ? "ml-64" : "ml-0")}>
-        <div className="flex h-screen">
-          <div className="w-1/2 p-6 overflow-auto border-r border-border">
-            <StoryInput
-              title={project?.title || ''}
-              onTitleChange={updateTitle}
-              genre={project?.genre || ''}
-              onGenreChange={(v) => updateField('genre', v)}
-              story={project?.story || ''}
-              onStoryChange={updateStory}
-              numPages={project?.num_pages || 1}
-              onNumPagesChange={(v) => updateField('num_pages', v)}
-              pageStorylines={(project?.page_storylines as string[]) || []}
-              onPageStorylinesChange={(v) => updateField('page_storylines', v)}
-              characterDescriptions={(project?.character_descriptions as any[]) || []}
-              onCharacterDescriptionsChange={(v) => updateField('character_descriptions', v)}
-              theme={project?.theme || ''}
-              onThemeChange={(v) => updateField('theme', v)}
-              settings={project?.settings || ''}
-              onSettingsChange={(v) => updateField('settings', v)}
-              recommendations={project?.recommendations || ''}
-              onRecommendationsChange={(v) => updateField('recommendations', v)}
-              referenceImages={referenceImages}
-              onAddImage={addReferenceImage}
-              onRemoveImage={removeReferenceImage}
-              onUpdateLabel={updateImageLabel}
-              isGenerating={isGenerating}
-            />
-          </div>
-          <div className="w-1/2 p-6 overflow-auto">
-            <PreviewPanel
+        <ResizablePanelGroup direction="horizontal" className="h-screen">
+          <ResizablePanel defaultSize={50} minSize={25} maxSize={75}>
+            <div className="h-full p-6 overflow-auto">
+              <StoryInput
+                title={project?.title || ''}
+                onTitleChange={updateTitle}
+                genre={project?.genre || ''}
+                onGenreChange={(v) => updateField('genre', v)}
+                story={project?.story || ''}
+                onStoryChange={updateStory}
+                numPages={project?.num_pages || 1}
+                onNumPagesChange={(v) => updateField('num_pages', v)}
+                pageStorylines={(project?.page_storylines as string[]) || []}
+                onPageStorylinesChange={(v) => updateField('page_storylines', v)}
+                characterDescriptions={(project?.character_descriptions as any[]) || []}
+                onCharacterDescriptionsChange={(v) => updateField('character_descriptions', v)}
+                theme={project?.theme || ''}
+                onThemeChange={(v) => updateField('theme', v)}
+                settings={project?.settings || ''}
+                onSettingsChange={(v) => updateField('settings', v)}
+                recommendations={project?.recommendations || ''}
+                onRecommendationsChange={(v) => updateField('recommendations', v)}
+                referenceImages={referenceImages}
+                onAddImage={addReferenceImage}
+                onRemoveImage={removeReferenceImage}
+                onUpdateLabel={updateImageLabel}
+                isGenerating={isGenerating}
+                disabled={project?.status === 'complete'}
+              />
+            </div>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={50} minSize={25} maxSize={75}>
+            <div className="h-full p-6 overflow-auto">
+              <PreviewPanel
               style={project?.style || 'comic'}
               onStyleChange={updateStyle}
               status={project?.status || 'draft'}
@@ -377,8 +383,9 @@ export default function Index() {
               coverImageUrl={project?.cover_image_url || null}
               coverRegenCount={project?.cover_regen_count || 0}
             />
-          </div>
-        </div>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );
