@@ -90,6 +90,36 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          credits_remaining: number
+          display_name: string | null
+          id: string
+          subscription_plan: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          credits_remaining?: number
+          display_name?: string | null
+          id: string
+          subscription_plan?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          credits_remaining?: number
+          display_name?: string | null
+          id?: string
+          subscription_plan?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           character_descriptions: Json

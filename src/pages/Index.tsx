@@ -6,6 +6,7 @@ import { StoryInput } from '@/components/StoryInput';
 import { PreviewPanel } from '@/components/PreviewPanel';
 import { MangaReader } from '@/components/MangaReader';
 import { useProject } from '@/hooks/useProject';
+import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
 import type { Project, Character, Panel } from '@/types/project';
 import type { User } from '@supabase/supabase-js';
@@ -19,6 +20,7 @@ export default function Index() {
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [showReader, setShowReader] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { profile, isLoading: isProfileLoading } = useProfile(user);
 
   const {
     project,
@@ -324,6 +326,9 @@ export default function Index() {
         isLoading={isLoadingProjects}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
+        profile={profile}
+        userEmail={user?.email || null}
+        isProfileLoading={isProfileLoading}
       />
       <div className={cn("min-h-screen transition-all duration-300", sidebarOpen ? "ml-64" : "ml-0")}>
         <ResizablePanelGroup direction="horizontal" className="h-screen">
@@ -353,7 +358,7 @@ export default function Index() {
                 onRemoveImage={removeReferenceImage}
                 onUpdateLabel={updateImageLabel}
                 isGenerating={isGenerating}
-                disabled={project?.status === 'complete'}
+                disabled={false}
               />
             </div>
           </ResizablePanel>

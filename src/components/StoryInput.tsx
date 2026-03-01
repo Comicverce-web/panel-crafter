@@ -144,13 +144,6 @@ export function StoryInput({
 
   return (
     <div className="space-y-6 h-full">
-      {disabled && (
-        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-center">
-          <p className="text-sm text-primary font-medium">
-            🔒 This project is complete. Open the Reader or download the PDF to view your creation.
-          </p>
-        </div>
-      )}
       {/* Title */}
       <Card className="border-border bg-card/50 backdrop-blur">
         <CardHeader className="pb-3">

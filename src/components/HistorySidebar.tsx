@@ -1,7 +1,10 @@
 import { ChevronLeft, ChevronRight, Plus, Trash2, Clock, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { UserProfileCard } from '@/components/UserProfileCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { Project } from '@/types/project';
+import type { Profile } from '@/hooks/useProfile';
 
 interface HistorySidebarProps {
   projects: Project[];
@@ -12,6 +15,9 @@ interface HistorySidebarProps {
   isLoading?: boolean;
   isOpen: boolean;
   onToggle: () => void;
+  profile: Profile | null;
+  userEmail: string | null;
+  isProfileLoading?: boolean;
 }
 
 export function HistorySidebar({
@@ -23,7 +29,11 @@ export function HistorySidebar({
   isLoading,
   isOpen,
   onToggle,
+  profile,
+  userEmail,
+  isProfileLoading,
 }: HistorySidebarProps) {
+  const isMobile = useIsMobile();
   return (
     <>
       {/* Toggle Button */}
@@ -122,12 +132,13 @@ export function HistorySidebar({
             )}
           </div>
 
-          {/* Footer */}
-          <div className="p-4 border-t border-sidebar-border">
-            <p className="text-xs text-muted-foreground text-center">
-              Powered by AI ✨
-            </p>
-          </div>
+          {/* Profile Card */}
+          <UserProfileCard
+            profile={profile}
+            email={userEmail}
+            isLoading={isProfileLoading}
+            isCollapsed={isMobile && !isOpen}
+          />
         </div>
       </aside>
     </>
