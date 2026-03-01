@@ -311,11 +311,11 @@ export function PreviewPanel({
                 Your {style === 'manga' ? 'Manga' : 'Comic'} is Ready!
               </h3>
               <p className="text-muted-foreground">
-                Open the reader to view your creation in fullscreen page-by-page mode.
+                Open the reader to view your creation, or generate more panels to extend your story.
               </p>
             </div>
 
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-4 flex-wrap">
               <Button variant="comic" size="xl" onClick={onOpenReader} className="gap-2">
                 <BookOpen className="w-5 h-5" />
                 Open Reader
@@ -323,6 +323,15 @@ export function PreviewPanel({
               <Button variant="comic" size="xl" onClick={onDownload} className="gap-2">
                 <Download className="w-5 h-5" />
                 Download PDF
+              </Button>
+              <Button
+                variant="glow"
+                size="xl"
+                onClick={() => onStatusChange('panels')}
+                className="gap-2"
+              >
+                <Sparkles className="w-5 h-5" />
+                Generate More Panels
               </Button>
             </div>
 
