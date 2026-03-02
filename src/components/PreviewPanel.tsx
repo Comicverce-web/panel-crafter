@@ -1,7 +1,10 @@
-import { Download, Loader2, Sparkles, BookOpen, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Download, Loader2, Sparkles, BookOpen, RefreshCw, AlertTriangle, Crown, Megaphone } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 import { StyleSelector } from '@/components/StyleSelector';
 import { WorkflowProgress } from '@/components/WorkflowProgress';
 import { CharacterCard } from '@/components/CharacterCard';
@@ -31,6 +34,8 @@ interface PreviewPanelProps {
   storyLength: number;
   coverImageUrl: string | null;
   coverRegenCount: number;
+  projectId?: string;
+  subscriptionPlan?: string;
 }
 
 export function PreviewPanel({
@@ -55,9 +60,43 @@ export function PreviewPanel({
   storyLength,
   coverImageUrl,
   coverRegenCount,
+  projectId,
+  subscriptionPlan = 'free',
 }: PreviewPanelProps) {
+  const navigate = useNavigate();
   const [coverFeedback, setCoverFeedback] = useState('');
   const [showCoverLightbox, setShowCoverLightbox] = useState(false);
+  const [promotionSent, setPromotionSent] = useState(false);
+  const [showPromoNotification, setShowPromoNotification] = useState(false);
+
+  const isEligibleForPromotion = subscriptionPlan === 'premium' || subscriptionPlan === 'custom';
+
+  const handlePromotionRequest = async () => {
+    if (!projectId || promotionSent) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const { error } = await supabase.from('promotion_requests').insert({
+        user_id: session.user.id,
+        project_id: projectId,
+        subscription_plan: subscriptionPlan,
+      });
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('Promotion already requested for this project');
+        } else {
+          throw error;
+        }
+        return;
+      }
+      setPromotionSent(true);
+      setShowPromoNotification(true);
+      setTimeout(() => setShowPromoNotification(false), 5000);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send promotion request');
+    }
+  };
   const maxRegens = 3;
   const regensLeft = maxRegens - coverRegenCount;
 
@@ -71,16 +110,27 @@ export function PreviewPanel({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-comic text-2xl text-gradient-primary">Preview</h2>
-        <Button
-          variant="comic"
-          size="lg"
-          onClick={onDownload}
-          disabled={status !== 'complete' || isGenerating}
-          className="gap-2"
-        >
-          <Download className="w-5 h-5" />
-          Download PDF
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/subscription')}
+            className="gap-1"
+          >
+            <Crown className="w-4 h-4" />
+            Plans
+          </Button>
+          <Button
+            variant="comic"
+            size="lg"
+            onClick={onDownload}
+            disabled={status !== 'complete' || isGenerating}
+            className="gap-2"
+          >
+            <Download className="w-5 h-5" />
+            Download PDF
+          </Button>
+        </div>
       </div>
 
       {/* Workflow Progress */}
@@ -333,7 +383,25 @@ export function PreviewPanel({
                 <Sparkles className="w-5 h-5" />
                 Generate More Panels
               </Button>
+              {isEligibleForPromotion && !promotionSent && (
+                <Button
+                  variant="accent"
+                  size="xl"
+                  onClick={handlePromotionRequest}
+                  className="gap-2"
+                >
+                  <Megaphone className="w-5 h-5" />
+                  Request Promotion
+                </Button>
+              )}
             </div>
+
+            {/* Promotion notification */}
+            {showPromoNotification && (
+              <div className="fixed top-4 right-4 z-50 bg-success text-success-foreground px-6 py-3 rounded-lg shadow-lg animate-fade-in">
+                Your request has been sent.
+              </div>
+            )}
 
             {/* Preview thumbnails */}
             {coverImageUrl && (

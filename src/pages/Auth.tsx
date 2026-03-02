@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -14,20 +14,56 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Clear stale sessions on mount
+  useEffect(() => {
+    const clearStaleSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          // Valid session exists, redirect to home
+          navigate('/');
+          return;
+        }
+      } catch {
+        // Clear any corrupted session data
+        await supabase.auth.signOut();
+      }
+    };
+    clearStaleSession();
+  }, [navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        // Clear any stale tokens first
+        await supabase.auth.signOut();
+        
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        
+        // Check if user is admin - redirect to dashboard
+        if (data.user) {
+          const { data: roleData } = await supabase.rpc('has_role', {
+            _user_id: data.user.id,
+            _role: 'admin',
+          });
+          if (roleData) {
+            toast.success('Welcome back, Admin!');
+            navigate('/dev-dashboard');
+            return;
+          }
+        }
+        
         toast.success('Welcome back!');
         navigate('/');
       } else {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        toast.success('Check your email to confirm your account!');
+        toast.success('Account created! You can now sign in.');
+        setIsLogin(true);
       }
     } catch (error: any) {
       toast.error(error.message);
