@@ -387,6 +387,8 @@ export default function Index() {
               storyLength={project?.story?.length || 0}
               coverImageUrl={project?.cover_image_url || null}
               coverRegenCount={project?.cover_regen_count || 0}
+              projectId={project?.id}
+              subscriptionPlan={profile?.subscription_plan}
             />
             </div>
           </ResizablePanel>
