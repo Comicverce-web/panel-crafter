@@ -22,28 +22,88 @@ export default function Auth() {
     });
   }, [navigate]);
 
+  const clearStaleAuthCache = () => {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    const authKey = `sb-${projectId}-auth-token`;
+
+    try {
+      localStorage.removeItem(authKey);
+    } catch {
+      // Ignore storage cleanup failures
+    }
+  };
+
+  const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number): Promise<T> =>
+    new Promise((resolve, reject) => {
+      const timeoutId = window.setTimeout(() => {
+        reject(new Error('Request timeout. Retrying...'));
+      }, timeoutMs);
+
+      promise
+        .then((value) => {
+          window.clearTimeout(timeoutId);
+          resolve(value);
+        })
+        .catch((error) => {
+          window.clearTimeout(timeoutId);
+          reject(error);
+        });
+    });
+
+  const isNetworkIssue = (error: unknown) => {
+    if (error instanceof TypeError) return true;
+    if (!(error instanceof Error)) return false;
+
+    const message = error.message.toLowerCase();
+    return message.includes('load failed') || message.includes('fetch') || message.includes('network') || message.includes('timeout');
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
 
-      if (data.user) {
-        const { data: roleData } = await supabase.rpc('has_role', {
-          _user_id: data.user.id,
-          _role: 'admin',
-        });
-        if (roleData) {
-          toast.success('Welcome back, Admin!');
-          navigate('/dev-dashboard');
-          return;
+    try {
+      const maxAttempts = 2;
+      let signInData: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['data'] | null = null;
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          const { data, error } = await withTimeout(
+            supabase.auth.signInWithPassword({ email: email.trim(), password }),
+            8000
+          );
+
+          if (error) throw error;
+          signInData = data;
+          break;
+        } catch (attemptError) {
+          const shouldRetry = attempt < maxAttempts && isNetworkIssue(attemptError);
+          if (!shouldRetry) throw attemptError;
+
+          clearStaleAuthCache();
+          await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
         }
       }
+
+      if (!signInData?.user) {
+        throw new Error('Unable to sign in right now. Please try again.');
+      }
+
       toast.success('Welcome back!');
-      navigate('/');
+      navigate('/', { replace: true });
+
+      void (async () => {
+        const { data: roleData } = await supabase.rpc('has_role', {
+          _user_id: signInData.user.id,
+          _role: 'admin',
+        });
+
+        if (roleData) {
+          navigate('/dev-dashboard', { replace: true });
+        }
+      })();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error?.message || 'Unable to sign in. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +113,7 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({ email: email.trim(), password });
       if (error) throw error;
       toast.success('Account created! You can now sign in.');
       setView('login');
@@ -68,7 +128,7 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
