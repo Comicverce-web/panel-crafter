@@ -13,25 +13,61 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isValidSession, setIsValidSession] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   useEffect(() => {
-    // Check if we have a recovery session from the URL hash
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const type = hashParams.get('type');
-    
-    if (type === 'recovery') {
-      setIsValidSession(true);
-    } else {
-      // Also check via session
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          setIsValidSession(true);
-        } else {
-          toast.error('Invalid or expired reset link.');
-          navigate('/auth');
+    let isMounted = true;
+
+    const initializeRecoverySession = async () => {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const code = searchParams.get('code');
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
         }
-      });
-    }
+
+        const hasRecoveryHash = hashParams.get('type') === 'recovery';
+        const checks = hasRecoveryHash ? 8 : 1;
+
+        for (let attempt = 0; attempt < checks; attempt++) {
+          const { data: { session } } = await supabase.auth.getSession();
+
+          if (session) {
+            if (isMounted) {
+              setIsValidSession(true);
+            }
+            return;
+          }
+
+          if (attempt < checks - 1) {
+            await new Promise((resolve) => window.setTimeout(resolve, 250));
+          }
+        }
+
+        if (isMounted) {
+          toast.error('Invalid or expired reset link.');
+          navigate('/auth', { replace: true });
+        }
+      } catch (error: any) {
+        if (isMounted) {
+          toast.error(error?.message || 'Invalid or expired reset link.');
+          navigate('/auth', { replace: true });
+        }
+      } finally {
+        if (isMounted) {
+          setIsCheckingSession(false);
+        }
+      }
+    };
+
+    void initializeRecoverySession();
+
+    return () => {
+      isMounted = false;
+    };
   }, [navigate]);
 
   const handleReset = async (e: React.FormEvent) => {
@@ -40,18 +76,32 @@ export default function ResetPassword() {
       toast.error('Passwords do not match.');
       return;
     }
+
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      toast.success('Password updated! Redirecting...');
-      setTimeout(() => navigate('/'), 1500);
+
+      await supabase.auth.signOut({ scope: 'local' });
+      toast.success('Password updated! Please sign in again.');
+      navigate('/auth', { replace: true });
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error?.message || 'Unable to update password. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Validating reset link...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isValidSession) return null;
 
@@ -89,3 +139,4 @@ export default function ResetPassword() {
     </div>
   );
 }
+
