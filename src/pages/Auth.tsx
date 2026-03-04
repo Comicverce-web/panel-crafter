@@ -15,6 +15,7 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRetryingNetwork, setIsRetryingNetwork] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -61,28 +62,33 @@ export default function Auth() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setIsRetryingNetwork(false);
 
     const normalizedEmail = email.trim();
 
     try {
       const maxAttempts = 2;
+      const retryDelayMs = 300;
       let signInData: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['data'] | null = null;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
           const { data, error } = await withTimeout(
             supabase.auth.signInWithPassword({ email: normalizedEmail, password }),
-            5000
+            4500
           );
 
           if (error) throw error;
           signInData = data;
+          setIsRetryingNetwork(false);
           break;
         } catch (attemptError) {
           const shouldRetry = attempt < maxAttempts && isNetworkIssue(attemptError);
           if (!shouldRetry) throw attemptError;
 
+          setIsRetryingNetwork(true);
           clearStaleAuthCache();
+          await new Promise((resolve) => window.setTimeout(resolve, retryDelayMs));
         }
       }
 
@@ -110,6 +116,7 @@ export default function Auth() {
     } catch (error: any) {
       toast.error(error?.message || 'Unable to sign in. Please try again.');
     } finally {
+      setIsRetryingNetwork(false);
       setIsLoading(false);
     }
   };
@@ -247,6 +254,12 @@ export default function Auth() {
                     <><Sparkles className="w-4 h-4" /> {view === 'login' ? 'Sign In' : 'Create Account'}</>
                   )}
                 </Button>
+
+                {view === 'login' && isRetryingNetwork && (
+                  <p className="text-xs text-muted-foreground text-center" role="status" aria-live="polite">
+                    Network issue, retrying…
+                  </p>
+                )}
               </form>
 
               <div className="mt-6 text-center">

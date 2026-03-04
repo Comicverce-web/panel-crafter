@@ -97,7 +97,10 @@ export const UserProfileCard = memo(function UserProfileCard({
             <p className="text-xs text-[hsl(218,11%,65%)] truncate">{email}</p>
           </div>
           <DropdownMenuSeparator className="bg-[hsl(215,28%,17%)]" />
-          <DropdownMenuItem className="text-white/80 hover:text-white focus:text-white focus:bg-[hsl(215,28%,17%)] gap-2 cursor-pointer">
+          <DropdownMenuItem
+            className="text-white/80 hover:text-white focus:text-white focus:bg-[hsl(215,28%,17%)] gap-2 cursor-pointer"
+            onClick={() => navigate('/account/settings?tab=profile')}
+          >
             <User className="w-4 h-4" /> View Profile
           </DropdownMenuItem>
           <DropdownMenuItem className="text-white/80 hover:text-white focus:text-white focus:bg-[hsl(215,28%,17%)] gap-2 cursor-pointer" onClick={() => navigate('/account/settings')}>
@@ -138,7 +141,10 @@ export const UserProfileCard = memo(function UserProfileCard({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" align="start" className="w-[220px] bg-[hsl(222,47%,11%)] border-[hsl(215,28%,17%)] rounded-[10px]">
-          <DropdownMenuItem className="text-white/80 hover:text-white focus:text-white focus:bg-[hsl(215,28%,17%)] gap-2 cursor-pointer">
+          <DropdownMenuItem
+            className="text-white/80 hover:text-white focus:text-white focus:bg-[hsl(215,28%,17%)] gap-2 cursor-pointer"
+            onClick={() => navigate('/account/settings?tab=profile')}
+          >
             <User className="w-4 h-4" /> View Profile
           </DropdownMenuItem>
           <DropdownMenuItem className="text-white/80 hover:text-white focus:text-white focus:bg-[hsl(215,28%,17%)] gap-2 cursor-pointer" onClick={() => navigate('/account/settings')}>
