@@ -22,6 +22,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/subscription" element={<Subscription />} />
+          <Route path="/account/settings" element={<Subscription />} />
           <Route path="/dev-dashboard" element={<DevDashboard />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
