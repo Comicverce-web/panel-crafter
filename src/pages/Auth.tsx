@@ -62,6 +62,8 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
 
+    const normalizedEmail = email.trim();
+
     try {
       const maxAttempts = 2;
       let signInData: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['data'] | null = null;
@@ -69,8 +71,8 @@ export default function Auth() {
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
           const { data, error } = await withTimeout(
-            supabase.auth.signInWithPassword({ email: email.trim(), password }),
-            8000
+            supabase.auth.signInWithPassword({ email: normalizedEmail, password }),
+            5000
           );
 
           if (error) throw error;
@@ -81,7 +83,6 @@ export default function Auth() {
           if (!shouldRetry) throw attemptError;
 
           clearStaleAuthCache();
-          await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
         }
       }
 
@@ -93,13 +94,17 @@ export default function Auth() {
       navigate('/', { replace: true });
 
       void (async () => {
-        const { data: roleData } = await supabase.rpc('has_role', {
-          _user_id: signInData.user.id,
-          _role: 'admin',
-        });
+        try {
+          const { data: roleData, error } = await supabase.rpc('has_role', {
+            _user_id: signInData.user.id,
+            _role: 'admin',
+          });
 
-        if (roleData) {
-          navigate('/dev-dashboard', { replace: true });
+          if (!error && roleData) {
+            navigate('/dev-dashboard', { replace: true });
+          }
+        } catch {
+          // Ignore non-blocking role check failures
         }
       })();
     } catch (error: any) {
